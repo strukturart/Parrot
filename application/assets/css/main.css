@@ -1,0 +1,441 @@
+/*GENERAL*/
+
+:root {
+  --color-one: black;
+  --color-two: yellow;
+  --color-three: silver;
+  --color-four: rgb(99, 99, 99);
+  --color-five: rgb(38, 38, 38);
+  --color-six: rgb(78, 206, 144);
+  --color-seven: gainsboro;
+  --color-eight: rgb(241, 86, 24);
+  --color-ten: rgb(218, 229, 253);
+}
+
+*,
+*:before,
+*:after {
+  border: 0px;
+  padding: 0px;
+  margin: 0px;
+  box-sizing: border-box;
+  font-family: "Lato-Regular";
+}
+
+:focus {
+  outline: 0px;
+}
+
+@font-face {
+  font-family: "Lato-Regular";
+  src: url("../fonts/Lato-Regular.ttf");
+}
+
+html,
+body {
+  font-family: "Lato-Regular";
+  font-weight: 100;
+  position: relative;
+  margin: 0px;
+  padding: 0px;
+  font-size: 0.95rem;
+  line-height: 1.4rem;
+  scroll-behavior: smooth;
+  height: 100vh;
+  margin: 0;
+  background: black;
+  overflow: none;
+}
+
+kbd {
+  border-radius: 3px;
+  padding: 1px 2px 0;
+  border: 1px solid black;
+}
+
+form {
+  font-family: "Lato-Regular";
+}
+
+input {
+  font-family: "Lato-Regular";
+}
+
+p {
+  margin: 1rem 0 1rem 0;
+}
+
+h1 {
+  font-size: 1rem;
+  margin: 25px 0 5px 0;
+  color: gray;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 25px 0 5px 0;
+  color: gray;
+  text-transform: uppercase;
+}
+
+button {
+  width: 100%;
+  border-radius: 2px;
+  padding: 3px;
+  margin: 0 0 5px 0;
+}
+
+button:focus {
+  background: var(--color-five);
+  font-weight: bold;
+}
+
+textarea {
+  background: white;
+  width: 100%;
+  color: black;
+}
+
+label {
+  color: white;
+  margin: 0 0 10px 0;
+  padding: 5px;
+  display: block;
+}
+
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  background: #fcfff4;
+  border-radius: 50px;
+  opacity: 0;
+}
+
+div.ckb-icon {
+  background: rgb(203, 209, 201);
+  width: 40px;
+  height: 20px;
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  margin-top: -10px;
+  opacity: 0.6;
+}
+
+div.toogle-button {
+  background: rgb(105, 110, 102);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+
+  right: 23px;
+  top: 50%;
+  margin-top: -8px;
+  z-index: 3;
+}
+
+select {
+  width: 99%;
+  padding: 5px;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: none;
+  color: rgb(54, 54, 54);
+
+  outline: 0;
+  border: 0;
+  border-bottom: 2px solid rgb(63, 63, 63);
+  margin: 0 0% 0 0%;
+  text-align: center;
+  position: relative;
+  background: #fafafa url("image/E264.svg") no-repeat 99% 80%;
+}
+
+input[type="checkbox"]:checked ~ div.ckb-icon {
+  background: rgb(255, 255, 255);
+  opacity: 1;
+}
+
+input[type="checkbox"]:checked ~ div.toogle-button {
+  right: 7px;
+}
+
+input:focus {
+  background: var(--color-three);
+}
+
+.input-parent:focus {
+  background: var(--color-three);
+}
+
+.input-parent {
+  position: relative;
+}
+
+div.textarea-footer {
+  font-size: 0.6rem;
+  background: none !important;
+  margin: -3px 0;
+  color: black;
+}
+
+a.button {
+  width: 100%;
+  display: block;
+  border-radius: 2px;
+  padding: 3px;
+  text-decoration: none;
+  color: white;
+}
+
+a.button:focus {
+  background: var(--color-three);
+}
+
+a {
+  font-style: normal;
+  text-decoration: none;
+  color: white;
+}
+
+.debug {
+  outline: 1px solid red;
+}
+
+/*///////////////////////////
+///TOAST////////////////*/
+
+div#toast {
+  position: fixed;
+  height: auto;
+  overflow: none;
+  background: black;
+  color: white;
+  z-index: 10;
+  min-width: 100%;
+  padding: 5px;
+  top: 0px;
+
+  transition: all 0.5s ease-in-out;
+  transform-origin: left top;
+  transform: translate(0px, -100px);
+}
+
+div#side-toast {
+  position: fixed;
+  height: auto;
+  overflow: none;
+  background: orange;
+  color: white;
+  z-index: 100;
+  padding: 8px;
+  top: 70vh;
+  border-bottom-right-radius: 15px;
+  border-top-right-radius: 15px;
+
+  transition: all 0.5s ease-in-out;
+  transform-origin: left top;
+  transform: translate(-100vw, 0px);
+}
+
+div#side-toast img {
+  width: 30px;
+}
+
+/*
+ top bar
+ */
+
+div#top-bar {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  height: 15px;
+  z-index: 6;
+  background: black;
+  display: none;
+}
+
+div#top-bar div#inner {
+  position: relative;
+}
+
+div#top-bar div {
+  background: black;
+  color: white;
+  padding: 2px;
+}
+
+div#top-bar div#button-center {
+  background: black;
+  color: white;
+  padding: 2px;
+  width: 30%;
+  text-align: center;
+}
+
+div#top-bar div#button-left {
+  background: black;
+  color: white;
+  padding: 2px;
+  width: 20px;
+  text-align: left;
+  width: 30%;
+}
+
+/*
+ bottom bar
+ */
+
+div#bottom-bar {
+  position: fixed;
+  bottom: 10px;
+  left: 0px;
+  height: 15px;
+  z-index: 6;
+  background: black;
+  display: none;
+}
+
+div#bottom-bar div#inner {
+  position: relative;
+}
+
+div#bottom-bar div {
+  background: black;
+  color: white;
+  padding: 2px;
+}
+
+div#bottom-bar div#button-center {
+  background: black;
+  color: white;
+  padding: 2px;
+  width: 30%;
+  text-align: center;
+}
+
+div#bottom-bar div#button-left {
+  background: black;
+  color: white;
+  padding: 2px;
+  width: 20px;
+  text-align: left;
+  width: 30%;
+}
+
+div#bottom-bar div#button-right {
+  background: black;
+  color: white;
+  padding: 2px;
+  width: 30%;
+  text-align: right;
+}
+
+/*///////////////////////////
+///INTRO////////////////*/
+
+@keyframes roll {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+div#intro {
+  max-width: 100vw;
+  position: fixed;
+  z-index: 15;
+  left: 0;
+  top: 0;
+  background: black;
+  color: white;
+  font-size: 14px;
+  padding: 5px;
+}
+
+div#intro div {
+  background: black;
+  color: white;
+  font-size: 14px;
+  padding: 3px;
+  position: fixed;
+}
+
+div#intro div#icon img {
+  animation: roll 3s infinite;
+  animation-delay: 1.5s;
+  display: block;
+  width: 100%;
+}
+
+div#intro div#icon {
+  background: var(--color-ten);
+  border-radius: 10px;
+  width: 70px;
+  display: block;
+  z-index: 8;
+  top: 125px;
+  position: absolute;
+  left: 50%;
+  margin: 0 0 0 -35px;
+}
+
+div#intro div#intro-footer {
+  position: absolute;
+  bottom: 20px;
+  font-size: 0.8rem;
+  text-align: center;
+  width: 100%;
+  left: 0px;
+}
+
+/*ADS*/
+
+div#kaios-ads {
+  min-height: 240px;
+  max-height: 240px;
+  min-width: 240px;
+  padding: 0px;
+}
+
+div#result-container {
+  background: rgb(216, 216, 216) !important;
+  max-height: 60vh;
+  overflow-y: hidden;
+}
+
+li.item {
+  background: silver;
+  padding: 3px;
+  margin: 0 0 10px 0;
+  list-style: none !important;
+}
+
+li.item:focus {
+  background: black !important;
+  color: white;
+}
+main {
+  padding: 10px;
+  width: 100vw;
+  height: 99vh;
+
+  max-height: 90vh;
+  overflow: hidden !important;
+  position: absolute;
+}
+
+main div {
+  height: 90vh;
+
+  max-height: 90vh;
+  overflow: hidden !important;
+  position: relative;
+}
