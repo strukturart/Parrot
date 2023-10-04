@@ -61,6 +61,13 @@ input {
   font-family: "Lato-Regular";
 }
 
+input[type="search"] {
+  width: 90vw;
+  height: 30px;
+  padding: 5px;
+  margin: 0 0 10px 0;
+}
+
 p {
   margin: 1rem 0 1rem 0;
 }
@@ -438,4 +445,10 @@ main div {
   max-height: 90vh;
   overflow: hidden !important;
   position: relative;
+}
+
+ul#words-list li {
+  margin: 2px;
+  border-radius: 10px;
+  padding: 5px;
 }

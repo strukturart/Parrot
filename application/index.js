@@ -6,6 +6,18 @@ let file_content = [];
 let current_file;
 let files = [];
 
+let filtered_content = file_content; // Initialize filtered_content with the original data
+
+let filter_words = (term) => {
+  // Use the filter() method to filter the array
+  filtered_content = file_content.filter((item) => {
+    // Check if the 'word' property of each object contains the 'term' value
+    return item.word.includes(term);
+  });
+  // You can also return the filtered result if needed
+  return filtered_content;
+};
+
 let set_tabindex = () => {
   document
     .querySelectorAll('.item:not([style*="display: none"]')
@@ -28,6 +40,7 @@ let store_content = () => {
   console.log(reversedString);
   helper.renameFile(current_file, reversedString);
 };
+
 let load_file = function (filename) {
   let sdcard = "";
 
@@ -59,13 +72,15 @@ let load_file = function (filename) {
       var splitArray = f.split("|");
 
       // Create objects without including "|"
-      file_content = splitArray.map(function (item) {
+      file_content = splitArray.map(function (item, index) {
         // Remove leading and trailing whitespace from each item
         item = item.trim();
 
         // Create objects without including "|"
-        return { word: item };
+        return { word: item, id: index };
       });
+
+      filtered_content = file_content;
     };
 
     reader.readAsText(this.result);
@@ -105,6 +120,8 @@ let nav = function (move) {
     behavior: "smooth",
   });
 };
+
+//list dic
 
 try {
   var d = navigator.getDeviceStorage("sdcard");
@@ -202,11 +219,12 @@ document.addEventListener("DOMContentLoaded", function () {
                   },
                   onkeydown: (e) => {
                     if (e.keyCode === 13) {
-                      filter_query =
-                        document.activeElement.getAttribute("data-path");
-                      load_file(filter_query);
-
-                      m.route.set("/list_words", {});
+                      load_file(
+                        document.activeElement.getAttribute("data-path")
+                      );
+                      setTimeout(() => {
+                        m.route.set("/list_words", {});
+                      }, 1000);
                     }
                   },
                 },
@@ -225,17 +243,63 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     view: function () {
       return m("div", [
+        m("input", {
+          type: "search",
+          class: "item",
+          id: "input-search",
+          oninput: (e) => {
+            filter_words(e.target.value);
+          },
+          onkeydown: (e) => {
+            if (e.key === "SoftLeft") {
+              //add word
+              let valueToCheck = e.target.value;
+
+              // Check if the value exists in the array of objects
+              let valueExists = filtered_content.some(
+                (obj) => obj.word === valueToCheck
+              );
+
+              if (valueExists) {
+                helper.side_toaster("words still in the list", 4000);
+              } else {
+                file_content.push({
+                  word: document.getElementById("input-search").value,
+                  id: file_content.lemgth,
+                });
+                filter_words(valueToCheck);
+              }
+            }
+          },
+        }),
         m(
           "ul",
           {
-            class: "",
+            class: "flex",
+            id: "words-list",
             oncreate: () => {
               helper.bottom_bar("add", "edit", "delete");
             },
           },
           [
-            file_content.map((e) => {
-              return m("li", { class: "item" }, e.word);
+            filtered_content.map((e) => {
+              return m(
+                "li",
+                {
+                  class: "item",
+                  "data-index": e.index,
+                  onkeydown: (e) => {
+                    if (e.key === "SoftRight") {
+                      //remove word
+
+                      let indexToRemove =
+                        document.activeElement.getAttribute("data-id");
+                      file_content.splice(indexToRemove, 1);
+                    }
+                  },
+                },
+                e.word
+              );
             }),
           ]
         ),
@@ -317,8 +381,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (m.route.get().includes("/list_words")) {
           evt.preventDefault();
+          let userConfirmed = confirm("do you want to save the changes?");
 
-          m.route.set("/start");
+          // Check the user's choice
+          if (userConfirmed) {
+            // User clicked "OK" in the confirmation dialog
+            console.log(file_content);
+            m.route.set("/start");
+          } else {
+            // User clicked "Cancel" or closed the dialog
+            console.log("User clicked Cancel or closed the dialog");
+            m.route.set("/start");
+          }
         }
         if (m.route.get().includes("/start")) {
           window.close();
@@ -329,8 +403,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (m.route.get().includes("/list_words")) {
           evt.preventDefault();
+          let userConfirmed = confirm("do you want to save the changes?");
 
-          m.route.set("/start");
+          // Check the user's choice
+          if (userConfirmed) {
+            // User clicked "OK" in the confirmation dialog
+            console.log(file_content);
+            m.route.set("/start");
+          } else {
+            // User clicked "Cancel" or closed the dialog
+            console.log("User clicked Cancel or closed the dialog");
+            m.route.set("/start");
+          }
         }
 
         if (m.route.get().includes("/start")) {
