@@ -1,4 +1,67 @@
 const helper = (() => {
+  let load_ads = function () {
+    var js = document.createElement("script");
+    js.type = "text/javascript";
+    js.src = "assets/js/kaiads.v5.min.js";
+
+    js.onload = function () {
+      getKaiAd({
+        publisher: "4408b6fa-4e1d-438f-af4d-f3be2fa97208",
+        app: "parrot",
+        slot: "parrot",
+        test: 0,
+        timeout: 10000,
+        h: 120,
+        w: 200,
+        container: document.getElementById("KaiOsAds-Wrapper"),
+        onerror: (err) => console.error("Error:", err),
+        onready: (ad) => {
+          // user clicked the ad
+          ad.on("click", () => console.log("click event"));
+
+          // user closed the ad (currently only with fullscreen)
+          ad.on("close", () => console.log("close event"));
+
+          // the ad succesfully displayed
+          ad.on("display", () => console.log("display event"));
+
+          // Ad is ready to be displayed
+          // calling 'display' will display the ad
+          ad.call("display", {
+            navClass: "item",
+            tabIndex: 0,
+            display: "block",
+          });
+        },
+      });
+    };
+    document.head.appendChild(js);
+  };
+
+  //KaiOS ads
+  let getManifest = function (callback) {
+    if (!navigator.mozApps) {
+      return false;
+    }
+    let self = navigator.mozApps.getSelf();
+    self.onsuccess = function () {
+      callback(self.result);
+    };
+    self.onerror = function () {};
+  };
+
+  //KaiOs store true||false
+  function manifest(a) {
+    self = a.origin;
+    document.getElementById("version").innerText =
+      "Version: " + a.manifest.version;
+    if (a.installOrigin == "app://kaios-plus.kaiostech.com") {
+      settings.ads = true;
+    } else {
+      settings.ads = true;
+    }
+  }
+
   if (window.NodeList && !NodeList.prototype.forEach) {
     NodeList.prototype.forEach = Array.prototype.forEach;
   }
@@ -31,26 +94,6 @@ const helper = (() => {
       console.log("you are offline");
       return false;
     };
-  };
-
-  let getManifest = function (callback) {
-    if (navigator.mozApps) {
-      let self = navigator.mozApps.getSelf();
-      self.onsuccess = function () {
-        callback(self.result);
-      };
-      self.onerror = function () {
-        let t = document.getElementById("kaios-ads");
-        t.remove();
-        return false;
-      };
-    }
-
-    if ("b2g" in navigator) {
-      fetch("/manifest.webmanifest")
-        .then((r) => r.json())
-        .then((r) => callback(r.b2g_features));
-    }
   };
 
   let queue = [];
@@ -111,27 +154,6 @@ const helper = (() => {
         }, 1000);
       }
     }, time);
-  };
-
-  //get location by ip
-  let geoip = function (callback, key) {
-    const url = "https://api.ipbase.com/v2/info?apikey=" + key;
-    let xhr = new XMLHttpRequest();
-    xhr.open("GET", url);
-    xhr.responseType = "json";
-    xhr.send();
-    xhr.error = function (err) {
-      helper.side_toaster(err, 3000);
-    };
-
-    xhr.onload = function () {
-      let responseObj = xhr.response;
-      let latlng = [
-        responseObj.data.location.latitude,
-        responseObj.data.location.longitude,
-      ];
-      callback(latlng);
-    };
   };
 
   //delete file
@@ -239,7 +261,9 @@ const helper = (() => {
   };
 
   //delete file
-  let renameFile = function (filename, new_filename) {
+  let renameFile = function (filename, content) {
+    var file_content = new Blob([content], { type: "text/plain" });
+
     let sdcard = "";
 
     try {
@@ -255,44 +279,28 @@ const helper = (() => {
     let request = sdcard.get(filename);
 
     request.onsuccess = function () {
-      let data = this.result;
+      var request_del = sdcard.delete(filename);
 
-      let file_extension = data.name.split(".");
-      file_extension = file_extension[file_extension.length - 1];
-
-      let filepath = data.name.split("/").slice(0, -1).join("/") + "/";
-
-      let requestAdd = sdcard.addNamed(
-        data,
-        filepath + new_filename + "." + file_extension
-      );
-      requestAdd.onsuccess = function () {
-        var request_del = sdcard.delete(data.name);
-
-        request_del.onsuccess = function () {
-          // success copy and delete
-
-          document.querySelector(
-            "[data-filepath='" + filename + "']"
-          ).innerText = new_filename + "." + file_extension;
-
-          document.querySelector("[data-filepath='" + filename + "']").focus();
-
-          helper.side_toaster("successfully renamed", 3000);
+      request_del.onsuccess = function () {
+        // success copy and delete
+        let requestAdd = sdcard.addNamed(file_content, filename);
+        requestAdd.onsuccess = function () {
+          helper.side_toaster("saved successfully", 5000);
         };
-
-        request_del.onerror = function () {
-          // success copy not delete
-          toaster("Unable to write the file", 3000);
+        requestAdd.onerror = function () {
+          helper.toaster("Unable to write the file", 3000);
         };
       };
-      requestAdd.onerror = function () {
-        toaster("Unable to write the file", 3000);
+
+      request_del.onerror = function () {
+        // success copy not delete
+        helper.toaster("Unable to write the file", 3000);
       };
     };
 
     request.onerror = function () {
       toaster("Unable to write the file", 3000);
+      alert("no");
     };
   };
 
@@ -352,23 +360,22 @@ const helper = (() => {
   }
 
   //bottom bar
-  function bottom_bar(left, center, right) {
-    document.querySelector("div#bottom-bar div#button-left").textContent = left;
-    document.querySelector("div#bottom-bar div#button-center").textContent =
+  let bottom_bar = function (left, center, right) {
+    document.querySelector("div#bottom-bar div#button-left").innerHTML = left;
+    document.querySelector("div#bottom-bar div#button-center").innerHTML =
       center;
-    document.querySelector("div#bottom-bar div#button-right").textContent =
-      right;
+    document.querySelector("div#bottom-bar div#button-right").innerHTML = right;
 
     if (left == "" && center == "" && right == "") {
       document.querySelector("div#bottom-bar").style.display = "none";
     } else {
       document.querySelector("div#bottom-bar").style.display = "block";
     }
-  }
+  };
 
   //top bar
-  function top_bar(left, center, right) {
-    document.querySelector("div#top-bar div.button-left").textContent = left;
+  let top_bar = function (left, center, right) {
+    document.querySelector("div#top-bar div.button-left").innerHTML = left;
     document.querySelector("div#top-bar div.button-center").textContent =
       center;
     document.querySelector("div#top-bar div.button-right").textContent = right;
@@ -378,7 +385,7 @@ const helper = (() => {
     } else {
       document.querySelector("div#top-bar").style.display = "block";
     }
-  }
+  };
 
   function screenWakeLock(param, lock_type) {
     let lock;
@@ -407,11 +414,11 @@ const helper = (() => {
     add_script,
     deleteFile,
     isOnline,
-    geoip,
     side_toaster,
     renameFile,
     downloadFile,
     search_file,
     list_files,
+    load_ads,
   };
 })();

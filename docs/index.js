@@ -1,27 +1,401 @@
 "use strict";
 
 let debug = false;
-
-document.getElementById("intro").style.display = "none";
-
+let filter_query;
+let file_content = [];
+let current_file;
 let files = [];
 
-const search_file_callback = () => {
-  console.log(e);
-  files.push({ name: e });
-  alert(files);
+let filtered_content = file_content; // Initialize filtered_content with the original data
+
+let filter_words = (term) => {
+  // Use the filter() method to filter the array
+  filtered_content = file_content.filter((item) => {
+    // Check if the 'word' property of each object contains the 'term' value
+    return item.word.includes(term);
+  });
+  // You can also return the filtered result if needed
+  return filtered_content;
 };
 
-helper.search_file("german.dic", search_file_callback);
+let set_tabindex = () => {
+  document
+    .querySelectorAll('.item:not([style*="display: none"]')
+    .forEach((e, i) => {
+      if (e.style.display != "none") {
+        e.setAttribute("tabindex", i);
+      } else {
+        e.setAttribute("tabindex", -1);
+      }
+    });
+};
+
+let store_content = () => {
+  // User clicked "OK" in the confirmation dialog
+  console.log(file_content);
+  var reversedString = file_content
+    .map(function (item) {
+      return item.word;
+    })
+    .join("|");
+
+  helper.renameFile(current_file, reversedString);
+  m.route.set("/start");
+};
+
+let load_file = function (filename) {
+  let sdcard = "";
+
+  try {
+    sdcard = navigator.getDeviceStorage("sdcard");
+  } catch (e) {}
+
+  if ("b2g" in navigator) {
+    try {
+      sdcard = navigator.b2g.getDeviceStorage("sdcard");
+    } catch (e) {}
+  }
+
+  let request = sdcard.get(filename);
+  current_file = filename;
+
+  request.onsuccess = function () {
+    console.log(this.result);
+    let reader = new FileReader();
+
+    reader.onerror = function (event) {
+      reader.abort();
+    };
+
+    reader.onloadend = function () {
+      let f = reader.result;
+
+      // Split the string by "|"
+      var splitArray = f.split("|");
+
+      // Create objects without including "|"
+      file_content = splitArray.map(function (item, index) {
+        // Remove leading and trailing whitespace from each item
+        item = item.trim();
+
+        // Create objects without including "|"
+        return { word: item, id: index };
+      });
+
+      // Assuming file_content is your array of objects
+      file_content.sort(function (a, b) {
+        // Compare the 'word' property of the objects
+        return a.word.localeCompare(b.word);
+      });
+
+      filtered_content = file_content;
+    };
+
+    reader.readAsText(this.result);
+  };
+
+  request.onerror = function () {};
+};
+
+let nav = function (move) {
+  set_tabindex();
+
+  const currentIndex = document.activeElement.tabIndex;
+  let next = currentIndex + move;
+  let items = 0;
+
+  items = document.querySelectorAll(".item");
+
+  let targetElement = 0;
+
+  if (next <= items.length) {
+    targetElement = items[next];
+    targetElement.focus();
+  }
+
+  if (next == items.length) {
+    targetElement = items[0];
+    targetElement.focus();
+  }
+
+  const rect = document.activeElement.getBoundingClientRect();
+  const elY =
+    rect.top - document.body.getBoundingClientRect().top + rect.height / 2;
+
+  document.activeElement.parentElement.parentElement.scrollBy({
+    left: 0,
+    top: elY - window.innerHeight / 2,
+    behavior: "smooth",
+  });
+};
+
+//list dic
+
+try {
+  var d = navigator.getDeviceStorage("sdcard");
+
+  var cursor = d.enumerate();
+
+  cursor.onsuccess = function () {
+    if (!this.result) {
+      console.log("finished");
+      m.route.set("/start");
+    }
+    if (cursor.result.name !== null) {
+      var file = cursor.result;
+      let n = file.name.split(".");
+      let file_type = n[n.length - 1];
+      let m = file.name.split("/");
+      let file_name = m[n.length];
+
+      let filetype = "dic";
+      if (file_type == filetype) {
+        files.push({ "path": file.name, "name": file_name });
+      }
+      this.continue();
+    }
+  };
+
+  cursor.onerror = function () {
+    console.warn("No file found: " + this.error);
+  };
+} catch (e) {}
+
+if ("b2g" in navigator) {
+  try {
+    var sdcard = navigator.b2g.getDeviceStorage("sdcard");
+    var iterable = sdcard.enumerate();
+    var iterFiles = iterable.values();
+    function next(_files) {
+      _files
+        .next()
+        .then((file) => {
+          if (!file.done) {
+            var file = cursor.result;
+            let n = file.name.split(".");
+            let file_type = n[n.length - 1];
+            let m = file.name.split("/");
+            let file_name = m[n.length];
+
+            let filetype = "dic";
+            if (file_type == filetype) {
+              files.push({ path: file.name, name: file_name });
+            }
+
+            next(_files);
+          }
+        })
+        .catch(() => {
+          next(_files);
+        });
+    }
+    next(iterFiles);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+let startup = true;
+let t = 5000;
 
 document.addEventListener("DOMContentLoaded", function () {
-  var root = document.body;
+  var root = document.querySelector("main");
 
-  m.mount(root, {
+  var start = {
     view: function () {
-      return m("h1", "Try me out");
+      return m("div", [
+        m(
+          "div",
+          {
+            id: "intro",
+            oninit: () => {},
+            oncreate: () => {
+              startup
+                ? (t = 5000)
+                : (document.querySelector("#intro").style.display = "none");
+              setTimeout(() => {
+                document.querySelector("#intro").style.display = "none";
+                startup = false;
+              }, t);
+            },
+          },
+          [m("img", { src: "assets/icons/icon.png" })]
+        ),
+        m(
+          "ul",
+          {
+            id: "files-list",
+            oncreate: () => {
+              helper.bottom_bar("", "", "<img src='assets/images/option.svg'>");
+            },
+          },
+          [
+            files.map((e, i) => {
+              return m(
+                "li",
+                {
+                  class: "item",
+                  tabindex: i,
+                  "data-path": e.path,
+                  oncreate: ({ dom }) => {
+                    if (i == 0) {
+                      dom.focus();
+                    }
+                  },
+                  onkeydown: (e) => {
+                    if (e.keyCode === 13) {
+                      load_file(
+                        document.activeElement.getAttribute("data-path")
+                      );
+                      setTimeout(() => {
+                        m.route.set("/list_words", {});
+                      }, 1000);
+                    }
+
+                    if (e.key === "SoftRight") {
+                      m.route.set("/options");
+                    }
+                  },
+                },
+                e.name
+              );
+            }),
+          ]
+        ),
+      ]);
     },
+  };
+
+  var options = {
+    view: function () {
+      return m(
+        "div",
+        {
+          id: "options-page",
+          oninit: () => {
+            helper.load_ads();
+          },
+          oncreate: () => {
+            helper.bottom_bar("", "", "");
+          },
+        },
+        [
+          m("div", {
+            id: "text",
+            class: "item",
+            oncreate: ({ dom }) => {
+              m.render(
+                dom,
+                m.trust(
+                  "<kbd>Parrot</kbd> <br>With this app you can expand and maintain the vocabulary of your predictive text. <br><br> Credits: Mithril.js <br>License: MIT<br><br>"
+                )
+              );
+            },
+          }),
+          m("div", { id: "KaiOsAds-Wrapper", class: "item" }),
+        ]
+      );
+    },
+  };
+
+  var list = {
+    oninit: function () {
+      // Execute load_file and wait for it to complete before proceeding
+    },
+    view: function () {
+      return m("div", [
+        m("input", {
+          type: "search",
+          class: "item",
+          id: "input-search",
+          oncreate: ({ dom }) => {
+            dom.focus();
+          },
+          onfocus: () => {
+            helper.bottom_bar(
+              "<img src='assets/images/add.svg'>",
+              "<img src='assets/images/save.svg'>",
+              ""
+            );
+          },
+          oninput: (e) => {
+            filter_words(e.target.value);
+          },
+          onkeydown: (e) => {
+            if (e.keyCode === 13) {
+              store_content();
+            }
+
+            if (e.key === "SoftLeft") {
+              //add word
+              let valueToCheck = e.target.value;
+
+              // Check if the value exists in the array of objects
+              let valueExists = filtered_content.some(
+                (obj) => obj.word === valueToCheck
+              );
+
+              if (valueExists) {
+                helper.side_toaster("words still in the list", 4000);
+              } else {
+                file_content.push({
+                  word: document.getElementById("input-search").value,
+                  id: file_content.lemgth,
+                });
+                filter_words(valueToCheck);
+              }
+            }
+          },
+        }),
+        m(
+          "ul",
+          {
+            class: "flex",
+            id: "words-list",
+          },
+          [
+            filtered_content.map((e) => {
+              return m(
+                "li",
+                {
+                  class: "item",
+                  "data-index": e.index,
+                  onfocus: () => {
+                    helper.bottom_bar(
+                      "",
+                      "<img src='assets/images/save.svg'>",
+                      "<img src='assets/images/delete.svg'>"
+                    );
+                  },
+                  onkeydown: (e) => {
+                    if (e.keyCode === 13) {
+                      store_content();
+                    }
+                    if (e.key === "SoftRight") {
+                      //remove word
+
+                      let indexToRemove =
+                        document.activeElement.getAttribute("data-id");
+                      file_content.splice(indexToRemove, 1);
+                    }
+                  },
+                },
+                e.word
+              );
+            }),
+          ]
+        ),
+      ]);
+    },
+  };
+
+  m.route(root, "/start", {
+    "/list_words": list,
+    "/start": start,
+    "/options": options,
   });
+
+  m.route.prefix = "#";
 
   //////////////////////////////
   ////KEYPAD HANDLER////////////
@@ -56,53 +430,18 @@ document.addEventListener("DOMContentLoaded", function () {
       case "*":
         break;
       case "0":
-        if (status.windowOpen == "finder") {
-          addMapLayers("delete-marker");
-          return false;
-        }
-
         if (status.windowOpen == "map") {
-          maps.weather_map();
           return false;
         }
         break;
 
       case "Backspace":
-        status.closedByUser = true;
-        status.appOpendByUser = false;
-        status.tracking_running = false;
-        window.close();
         break;
 
       case "6":
-        module.hotline(module.parseGPX(gpx_string));
         break;
 
       case "1":
-        if (status.windowOpen == "map") {
-          if (status.tracking_running) {
-            return false;
-          } else {
-            if (status.geolocation == false) {
-              helper.side_toaster(
-                "can't start tracking, the position of your device could not be determined.",
-                4000
-              );
-              return false;
-            }
-            helper.side_toaster(
-              "tracking started,\n stop tracking with key 1",
-              4000
-            );
-            status.live_track = true;
-            module.measure_distance("tracking");
-            status.tracking_running = true;
-
-            var d = new Date();
-            d.setMinutes(d.getMinutes() + 1);
-            keepalive.add_alarm(d, "keep alive");
-          }
-        }
         break;
     }
   }
@@ -111,577 +450,66 @@ document.addEventListener("DOMContentLoaded", function () {
   ////SHORTPRESS
   //////////////
 
-  function shortpress_action(param) {
-    if (status.keylock) {
-      switch (param.key) {
-        case "Backspace":
-          preventDefault();
-          break;
-        case "EndCall":
-          preventDefault();
-          break;
-        case "Enter":
-          document.querySelector("body").classList.toggle("screenOff");
-          document.querySelector("html").classList.toggle("screenOff");
-
-          break;
-      }
-      return false;
-    }
-    switch (param.key) {
+  function shortpress_action(evt) {
+    switch (evt.key) {
       case "Backspace":
-        if (status.windowOpen == "scan") {
-          qr.stop_scan();
-          open_finder();
-          windowOpen = "finder";
+        evt.preventDefault();
+
+        if (m.route.get().includes("/list_words")) {
+          evt.preventDefault();
+          m.route.set("/start");
         }
 
-        if (
-          document.activeElement.tagName == "TEXTAREA" ||
-          document.activeElement.tagName == "INPUT"
-        )
-          break;
-
-        if (status.windowOpen == "files-option") {
-          document.getElementById("files-option").style.display = "none";
-          open_finder();
-          windowOpen = "finder";
-          general.active_item.focus();
-          break;
+        if (m.route.get().includes("/options")) {
+          evt.preventDefault();
+          m.route.set("/start");
         }
-
-        if (status.windowOpen != "map") {
-          document.querySelector("div#finder").style.display = "none";
-          document.querySelector("div#markers-option").style.display = "none";
-          document.getElementById("tracking-view").style.display = "none";
-
-          status.windowOpen = "map";
-          status.marker_selection = false;
-          document.activeElement.blur();
-
-          settings.load_settings();
-
-          helper.top_bar("", "", "");
-          helper.bottom_bar("", "", "");
-          break;
+        if (m.route.get().includes("/start")) {
+          window.close();
         }
-
-        if (status.windowOpen === "map") {
-          status.closedByUser = true;
-          localStorage.setItem("status", JSON.stringify(status));
-          break;
-        }
-
-        break;
 
       case "EndCall":
-        status.closedByUser = true;
-        localStorage.setItem("status", JSON.stringify(status));
-        window.close();
+        evt.preventDefault();
+
+        if (m.route.get().includes("/list_words")) {
+          evt.preventDefault();
+        }
+
+        if (m.route.get().includes("/start")) {
+          window.close();
+        }
         break;
 
       case "SoftLeft":
       case "Control":
-        if (status.windowOpen == "user-input" && save_mode == "rename-file") {
-          module.user_input("close");
-          status.windowOpen = "finder";
-          save_mode = "";
-          break;
-        }
-        if (status.windowOpen == "user-input") {
-          module.user_input("close");
-          save_mode = "";
-          if (status.tracking_paused) {
-            status.tracking_running = true;
-            status.tracking_paused = false;
-          }
-          break;
-        }
-        if (status.windowOpen == "search") {
-          search.hideSearch();
-          break;
-        }
-
-        if (status.path_selection && status.windowOpen != "user-input") {
-          helper.bottom_bar("", "", "");
-          status.path_selection = false;
-          module.measure_distance("destroy");
-          break;
-        }
-
-        if (status.windowOpen == "marker") {
-          helper.bottom_bar("", "", "");
-          status.marker_selection = false;
-          status.windowOpen = "map";
-          document.getElementById("markers-option").style.display = "none";
-        }
-
-        if (status.windowOpen == "map") {
-          ZoomMap("out");
-          break;
-        }
-
-        if (status.windowOpen == "finder" && qrscan == true) {
-          status.windowOpen = "scan";
-          let t = document.activeElement;
-          qr.start_scan(function (scan_callback) {
-            let slug = scan_callback;
-            document.activeElement.value = slug;
-            status.windowOpen = "finder";
-            t.focus();
-          });
-
-          break;
-        }
-
         break;
 
       case "SoftRight":
       case "Alt":
-        if (status.windowOpen == "search") {
-          start_search();
-          break;
-        }
-        if (status.path_selection && status.windowOpen == "map") {
-          save_mode = "geojson-path";
-          module.user_input("open", "", "save this marker as geojson file");
-          helper.bottom_bar("cancel", "", "save");
-
-          break;
-        }
-
-        if (
-          status.windowOpen == "user-input" &&
-          save_mode == "geojson-single"
-        ) {
-          let w;
-          if (module.user_input("return") == "") {
-            w = dayjs().format("YYYY-MM-DD-HH-mm");
-          } else {
-            w = module.user_input("return");
-          }
-
-          geojson.save_geojson(
-            setting.export_path + w + ".geojson",
-            "single-direct"
-          );
-          save_mode = "";
-          break;
-        }
-
-        if (
-          status.windowOpen == "user-input" &&
-          save_mode == "geojson-single"
-        ) {
-          let w;
-          if (module.user_input("return") == "") {
-            w = dayjs().format("YYYY-MM-DD-HH-mm");
-          } else {
-            w = module.user_input("return");
-          }
-
-          geojson.save_geojson(setting.export_path + w + ".geojson", "single");
-          save_mode = "";
-          break;
-        }
-
-        if (status.windowOpen == "user-input" && save_mode == "geojson-path") {
-          let w;
-          if (module.user_input("return") == "") {
-            w = dayjs().format("YYYY-MM-DD-HH-mm");
-          } else {
-            w = module.user_input("return");
-          }
-
-          geojson.save_geojson(setting.export_path + w + ".geojson", "path");
-          save_mode = "";
-          break;
-        }
-
-        if (
-          status.windowOpen == "user-input" &&
-          save_mode == "geojson-collection"
-        ) {
-          let w;
-          if (module.user_input("return") == "") {
-            w = dayjs().format("YYYY-MM-DD-HH-mm");
-          } else {
-            w = module.user_input("return");
-          }
-
-          geojson.save_geojson(
-            setting.export_path + w + ".geojson",
-            "collection"
-          );
-
-          save_mode = "";
-          break;
-        }
-
-        if (status.windowOpen == "user-input" && save_mode == "routing") {
-          let w;
-          if (module.user_input("return") == "") {
-            w = dayjs().format("YYYY-MM-DD-HH-mm");
-          } else {
-            w = module.user_input("return");
-          }
-
-          geojson.save_geojson(setting.export_path + w + ".geojson", "routing");
-          save_mode = "";
-          break;
-        }
-
-        if (
-          status.windowOpen == "user-input" &&
-          save_mode == "geojson-tracking"
-        ) {
-          let w;
-          if (module.user_input("return") == "") {
-            w = dayjs().format("YYYY-MM-DD-HH-mm");
-          } else {
-            w = module.user_input("return");
-          }
-
-          geojson.save_gpx(
-            setting.export_path + w + ".gpx",
-            "tracking",
-            gpx_callback
-          );
-          save_mode = "";
-          status.live_track = false;
-          status.live_track_id = [];
-
-          if (status.tracking_paused) {
-            status.tracking_running = false;
-            status.tracking_paused = false;
-          }
-          break;
-        }
-
-        if (status.windowOpen == "map") {
-          ZoomMap("in");
-          break;
-        }
-
-        if (status.windowOpen == "user-input" && save_mode != "geojson") {
-          let filename = module.user_input("return");
-          break;
-        }
-
-        if (status.windowOpen == "finder") {
-          if (
-            document.activeElement.getAttribute("data-map") == "gpx" ||
-            document.activeElement.getAttribute("data-map") == "geojson" ||
-            document.activeElement.getAttribute("data-map") == "gpx-osm"
-          ) {
-            show_files_option();
-          }
-          break;
-        }
-
         break;
 
       case "Enter":
-        if (status.intro) return false;
-        if (
-          status.windowOpen == "user-input" &&
-          save_mode == "geojson-tracking"
-        ) {
-          module.user_input("close");
-          module.measure_distance("destroy_tracking");
-          status.live_track = false;
-          status.live_track_id = [];
-          save_mode = "";
-          break;
-        }
+        document.querySelectorAll(".item")[0].focus();
 
-        if (status.windowOpen == "user-input" && save_mode == "routing") {
-          break;
-        }
-
-        if (status.windowOpen == "user-input" && save_mode == "rename-file") {
-          helper.renameFile(
-            general.active_item.getAttribute("data-filepath"),
-            module.user_input("return")
-          );
-          status.windowOpen = "finder";
-          save_mode = "";
-          break;
-        }
-
-        if (status.windowOpen == "map") {
-          open_finder();
-          status.windowOpen = "finder";
-          break;
-        }
-        if (
-          document.activeElement.tagName == "BUTTON" &&
-          document.activeElement.classList.contains("link")
-        ) {
-          window.open(document.activeElement.getAttribute("data-href"));
-          break;
-        }
-
-        if (document.activeElement.classList.contains("input-parent")) {
-          document.activeElement.children[1].focus();
-          if (document.activeElement.type == "checkbox") {
-            settings.save_chk(
-              document.activeElement.id,
-              document.activeElement.value
-            );
-          }
-        }
-
-        if (status.windowOpen == "search") {
-          search.search_return_data();
-
-          map.setView([olc_lat_lng[0], olc_lat_lng[1]]);
-          search.hideSearch();
-          mainmarker.current_lat = Number(olc_lat_lng[0]);
-          mainmarker.current_lng = Number(olc_lat_lng[1]);
-          helper.side_toaster("press 5 to save the marker", 2000);
-          break;
-        }
-
-        if (document.activeElement == document.getElementById("clear-cache")) {
-          maps.delete_cache();
-          helper
-            .calculateDatabaseSizeInMB(tilesLayer._db)
-            .then(function (sizeInMB) {
-              document.querySelector("#clear-cache em").innerText =
-                sizeInMB.toFixed(2);
-            });
-          break;
-        }
-
-        if (
-          document.activeElement == document.getElementById("save-settings")
-        ) {
-          settings.save_settings();
-          break;
-        }
-
-        if (document.activeElement == document.getElementById("oauth")) {
-          osm.OAuth_osm(osm_oauth_callback);
-
-          break;
-        }
-
-        if (
-          document.activeElement == document.getElementById("export-settings")
-        ) {
-          settings.export_settings();
-          break;
-        }
-
-        if (
-          document.activeElement ==
-          document.getElementById("load_settings_from_file")
-        ) {
-          settings.load_settings_from_file();
-
-          break;
-        }
-
-        if (
-          document.activeElement == document.getElementById("load_map_data")
-        ) {
-          maps.import_db();
-
-          break;
-        }
-
-        if (document.activeElement == document.getElementById("owm-key")) {
-          helper.bottom_bar("qr.scan", "", "");
-          break;
-        }
-
-        if (status.windowOpen == "marker") {
-          document.querySelector("div#markers-option").style.display = "block";
-          document.querySelector("div#markers-option").children[0].focus();
-          finder_tabindex();
-          status.windowOpen = "markers_option";
-
-          document.querySelector("input#popup").value = "";
-
-          let pu = mainmarker.selected_marker.getPopup();
-
-          if (pu != undefined) {
-            document.querySelector("input#popup").value = pu._content;
-          }
-          helper.bottom_bar("", "select", "");
-          tabIndex = 0;
-          break;
-        }
-
-        if (
-          status.windowOpen == "markers_option" &&
-          mainmarker.selected_marker != ""
-        ) {
-          markers_action();
-          break;
-        }
-
-        if (status.windowOpen == "files-option") {
-          markers_action();
-          break;
-        }
-
-        if (
-          status.windowOpen == "finder" &&
-          document.activeElement.classList.contains("item")
-        ) {
-          addMapLayers();
-          break;
-        }
-
-        break;
-
-      case "1":
-        if (status.windowOpen == "map") {
-          if (status.tracking_running) {
-            helper.side_toaster("tracking paused", 5000);
-            save_mode = "geojson-tracking";
-            module.user_input("open", "", "Save as GPX file");
-            helper.bottom_bar("cancel", "don't save", "save");
-
-            keepalive.remove_alarm();
-            status.tracking_running = false;
-            status.tracking_paused = true;
-            //live tracking
-            //upload track, before save local
-            let t = new Date().getTime() / 1000;
-            t = t + 320;
-            status.tracking_backupup_at = t;
-            keepalive.remove_alarm();
-
-            return true;
-          } else {
-            if (status.geolocation == false) {
-              helper.side_toaster(
-                "can't start tracking, the position of your device could not be determined.",
-                4000
-              );
-              return false;
-            }
-            helper.side_toaster(
-              "tracking started,\n stop tracking with key 1",
-              4000
-            );
-            module.measure_distance("tracking");
-            status.tracking_running = true;
-
-            var d = new Date();
-            d.setMinutes(d.getMinutes() + 1);
-            keepalive.add_alarm(d, "keep alive");
-          }
-        }
-        break;
-
-      case "2":
-        if (status.windowOpen == "map") {
-          search.showSearch();
-        }
-
-        break;
-
-      case "4":
-        if (status.windowOpen == "map") {
-          auto_update_view();
-        }
-        break;
-
-      case "5":
-        // maps.export_db();
-        //maps.import_db();
-        if (status.tracking_running) {
-          document.getElementById("tracking-view").style.display = "flex";
-          status.windowOpen = "trackingView";
-        }
-
-        break;
-
-      case "6":
-        module.select_gpx();
-
-        break;
-
-      case "7":
-        if (status.windowOpen == "map") {
-          module.measure_distance("addMarker");
-          helper.bottom_bar("close", "", "save");
-        }
-        break;
-
-      case "8":
-        if (status.windowOpen == "map") {
-          save_mode = "geojson-collection";
-          module.user_input("open", "", "save all markers as geojson file");
-          helper.bottom_bar("cancel", "", "save");
-        }
-
-        break;
-
-      case "9":
-        if (status.windowOpen == "map") {
-          L.marker([mainmarker.current_lat, mainmarker.current_lng]).addTo(
-            markers_group
-          );
-          module.set_f_upd_markers();
-        }
-        break;
-
-      case "0":
-        if (status.windowOpen == "map") {
-          mozactivity.share_position();
-        }
-        break;
-
-      case "*":
-        if (status.intro) return false;
-        mainmarker.selected_marker = module.select_marker();
-        break;
-
-      case "#":
-        if (status.windowOpen == "map") maps.caching_tiles();
         break;
 
       case "ArrowRight":
-        MovemMap("right");
-
-        if (
-          status.windowOpen == "finder" &&
-          document.activeElement.tagName != "INPUT"
-        ) {
-          finder_navigation("+1");
-        }
         break;
 
       case "ArrowLeft":
-        MovemMap("left");
-        if (
-          status.windowOpen == "finder" &&
-          document.activeElement.tagName != "INPUT"
-        ) {
-          finder_navigation("-1");
-        }
         break;
 
       case "ArrowUp":
-        if (status.windowOpen == "map" || status.windowOpen == "coordinations")
-          MovemMap("up");
+        nav(-1);
 
-        if (status.windowOpen == "search") search.search_nav(-1);
-        nav("-1");
         break;
 
       case "ArrowDown":
-        if (status.windowOpen == "map" || status.windowOpen == "coordinations")
-          MovemMap("down");
+        nav(+1);
+        break;
 
-        if (status.windowOpen == "search") search.search_nav(+1);
-
-        nav("+1");
+      case "5":
+        store_content();
         break;
     }
   }
@@ -691,13 +519,18 @@ document.addEventListener("DOMContentLoaded", function () {
   ////////////////////////////////
 
   function handleKeyDown(evt) {
-    if (status.visible === "hidden") return false;
-    if (evt.key === "Backspace" && status.windowOpen !== "map") {
-      evt.preventDefault();
-    }
-
     if (evt.key === "EndCall") {
       evt.preventDefault();
+      if (m.route.get().includes("/start")) {
+        window.close();
+      }
+    }
+
+    if (evt.key === "Backspace") {
+      evt.preventDefault();
+      if (m.route.get().includes("/start")) {
+        window.close();
+      }
     }
 
     if (!evt.repeat) {
@@ -717,15 +550,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function handleKeyUp(evt) {
-    if (status.visible === "hidden") return false;
     evt.preventDefault();
 
     if (evt.key == "Backspace") evt.preventDefault();
     //delete text
     if (
-      evt.key == "Backspace" &&
       status.windowOpen != "map" &&
-      status.windowOpen == "finder" &&
       document.activeElement.tagName == "INPUT"
     ) {
       evt.preventDefault();

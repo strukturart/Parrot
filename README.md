@@ -1,3 +1,5 @@
+<img width="50px" src="application/assets/icons/icon.png">
+<br>
 # Parrot
 
 This project aims to enhance the T9 predictive text input experience on KaiOS-powered devices by allowing users to easily manage and expand their T9 word library.

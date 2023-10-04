@@ -31,14 +31,16 @@ let set_tabindex = () => {
 };
 
 let store_content = () => {
+  // User clicked "OK" in the confirmation dialog
+  console.log(file_content);
   var reversedString = file_content
     .map(function (item) {
       return item.word;
     })
     .join("|");
 
-  console.log(reversedString);
   helper.renameFile(current_file, reversedString);
+  m.route.set("/start");
 };
 
 let load_file = function (filename) {
@@ -78,6 +80,12 @@ let load_file = function (filename) {
 
         // Create objects without including "|"
         return { word: item, id: index };
+      });
+
+      // Assuming file_content is your array of objects
+      file_content.sort(function (a, b) {
+        // Compare the 'word' property of the objects
+        return a.word.localeCompare(b.word);
       });
 
       filtered_content = file_content;
@@ -132,7 +140,6 @@ try {
     if (!this.result) {
       console.log("finished");
       m.route.set("/start");
-      document.getElementById("intro").style.display = "none";
     }
     if (cursor.result.name !== null) {
       var file = cursor.result;
@@ -143,7 +150,6 @@ try {
 
       let filetype = "dic";
       if (file_type == filetype) {
-        console.log(file_name);
         files.push({ "path": file.name, "name": file_name });
       }
       this.continue();
@@ -189,6 +195,9 @@ if ("b2g" in navigator) {
   }
 }
 
+let startup = true;
+let t = 5000;
+
 document.addEventListener("DOMContentLoaded", function () {
   var root = document.querySelector("main");
 
@@ -196,12 +205,28 @@ document.addEventListener("DOMContentLoaded", function () {
     view: function () {
       return m("div", [
         m(
+          "div",
+          {
+            id: "intro",
+            oninit: () => {},
+            oncreate: () => {
+              startup
+                ? (t = 5000)
+                : (document.querySelector("#intro").style.display = "none");
+              setTimeout(() => {
+                document.querySelector("#intro").style.display = "none";
+                startup = false;
+              }, t);
+            },
+          },
+          [m("img", { src: "assets/icons/icon.png" })]
+        ),
+        m(
           "ul",
           {
-            id: "files_list",
+            id: "files-list",
             oncreate: () => {
-              helper.bottom_bar("", "select", "");
-              document.getElementById("intro").style.display = "none";
+              helper.bottom_bar("", "", "<img src='assets/images/option.svg'>");
             },
           },
           [
@@ -226,6 +251,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         m.route.set("/list_words", {});
                       }, 1000);
                     }
+
+                    if (e.key === "SoftRight") {
+                      m.route.set("/options");
+                    }
                   },
                 },
                 e.name
@@ -234,6 +263,38 @@ document.addEventListener("DOMContentLoaded", function () {
           ]
         ),
       ]);
+    },
+  };
+
+  var options = {
+    view: function () {
+      return m(
+        "div",
+        {
+          id: "options-page",
+          oninit: () => {
+            helper.load_ads();
+          },
+          oncreate: () => {
+            helper.bottom_bar("", "", "");
+          },
+        },
+        [
+          m("div", {
+            id: "text",
+            class: "item",
+            oncreate: ({ dom }) => {
+              m.render(
+                dom,
+                m.trust(
+                  "<kbd>Parrot</kbd> <br>With this app you can expand and maintain the vocabulary of your predictive text. <br><br> Credits: Mithril.js <br>License: MIT<br><br>"
+                )
+              );
+            },
+          }),
+          m("div", { id: "KaiOsAds-Wrapper", class: "item" }),
+        ]
+      );
     },
   };
 
@@ -247,10 +308,24 @@ document.addEventListener("DOMContentLoaded", function () {
           type: "search",
           class: "item",
           id: "input-search",
+          oncreate: ({ dom }) => {
+            dom.focus();
+          },
+          onfocus: () => {
+            helper.bottom_bar(
+              "<img src='assets/images/add.svg'>",
+              "<img src='assets/images/save.svg'>",
+              ""
+            );
+          },
           oninput: (e) => {
             filter_words(e.target.value);
           },
           onkeydown: (e) => {
+            if (e.keyCode === 13) {
+              store_content();
+            }
+
             if (e.key === "SoftLeft") {
               //add word
               let valueToCheck = e.target.value;
@@ -277,9 +352,6 @@ document.addEventListener("DOMContentLoaded", function () {
           {
             class: "flex",
             id: "words-list",
-            oncreate: () => {
-              helper.bottom_bar("add", "edit", "delete");
-            },
           },
           [
             filtered_content.map((e) => {
@@ -288,7 +360,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 {
                   class: "item",
                   "data-index": e.index,
+                  onfocus: () => {
+                    helper.bottom_bar(
+                      "",
+                      "<img src='assets/images/save.svg'>",
+                      "<img src='assets/images/delete.svg'>"
+                    );
+                  },
                   onkeydown: (e) => {
+                    if (e.keyCode === 13) {
+                      store_content();
+                    }
                     if (e.key === "SoftRight") {
                       //remove word
 
@@ -307,16 +389,10 @@ document.addEventListener("DOMContentLoaded", function () {
     },
   };
 
-  var word = {
-    view: function () {
-      return m("a", { href: "#!/hello" }, "Enter!");
-    },
-  };
-
   m.route(root, "/start", {
     "/list_words": list,
-    "/add_word": word,
     "/start": start,
+    "/options": options,
   });
 
   m.route.prefix = "#";
@@ -381,18 +457,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (m.route.get().includes("/list_words")) {
           evt.preventDefault();
-          let userConfirmed = confirm("do you want to save the changes?");
+          m.route.set("/start");
+        }
 
-          // Check the user's choice
-          if (userConfirmed) {
-            // User clicked "OK" in the confirmation dialog
-            console.log(file_content);
-            m.route.set("/start");
-          } else {
-            // User clicked "Cancel" or closed the dialog
-            console.log("User clicked Cancel or closed the dialog");
-            m.route.set("/start");
-          }
+        if (m.route.get().includes("/options")) {
+          evt.preventDefault();
+          m.route.set("/start");
         }
         if (m.route.get().includes("/start")) {
           window.close();
@@ -403,18 +473,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (m.route.get().includes("/list_words")) {
           evt.preventDefault();
-          let userConfirmed = confirm("do you want to save the changes?");
-
-          // Check the user's choice
-          if (userConfirmed) {
-            // User clicked "OK" in the confirmation dialog
-            console.log(file_content);
-            m.route.set("/start");
-          } else {
-            // User clicked "Cancel" or closed the dialog
-            console.log("User clicked Cancel or closed the dialog");
-            m.route.set("/start");
-          }
         }
 
         if (m.route.get().includes("/start")) {
