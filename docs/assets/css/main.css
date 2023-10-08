@@ -51,6 +51,7 @@ kbd {
   border: 2px solid white;
   box-shadow: 2px 2px white;
   font-size: 0.85em;
+  color: white;
   line-height: 0.85em;
   display: inline-block;
   font-weight: 600;
@@ -378,7 +379,7 @@ main {
   width: 100vw;
   height: 99vh;
 
-  max-height: 90vh;
+  max-height: 99vh;
   overflow: hidden !important;
   position: absolute;
 }

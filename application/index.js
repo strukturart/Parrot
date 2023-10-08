@@ -5,6 +5,8 @@ let filter_query;
 let file_content = [];
 let current_file;
 let files = [];
+let action = null;
+let action_element = null;
 
 let filtered_content = file_content; // Initialize filtered_content with the original data
 
@@ -32,8 +34,7 @@ let set_tabindex = () => {
 
 let store_content = () => {
   // User clicked "OK" in the confirmation dialog
-  console.log(file_content);
-  var reversedString = file_content
+  var reversedString = filtered_content
     .map(function (item) {
       return item.word;
     })
@@ -85,7 +86,7 @@ let load_file = function (filename) {
       // Assuming file_content is your array of objects
       file_content.sort(function (a, b) {
         // Compare the 'word' property of the objects
-        return a.word.localeCompare(b.word);
+        // return a.word.localeCompare(b.word);
       });
 
       filtered_content = file_content;
@@ -282,16 +283,17 @@ document.addEventListener("DOMContentLoaded", function () {
         [
           m("div", {
             id: "text",
-            class: "item",
             oncreate: ({ dom }) => {
               m.render(
                 dom,
                 m.trust(
-                  "<kbd>Parrot</kbd> <br>With this app you can expand and maintain the vocabulary of your predictive text. <br><br> Credits: Mithril.js <br>License: MIT<br><br>"
+                  "<kbd class='item'>Parrot</kbd> <br>With this app you can expand and maintain the vocabulary of your predictive text. <br><br> Credits: Mithril.js <br>License: MIT<br><br>"
                 )
               );
             },
           }),
+          m("kbd", "KaiOs Ads"),
+
           m("div", { id: "KaiOsAds-Wrapper", class: "item" }),
         ]
       );
@@ -319,7 +321,19 @@ document.addEventListener("DOMContentLoaded", function () {
             );
           },
           oninput: (e) => {
-            filter_words(e.target.value);
+            console.log(action);
+            if (action == "edit") {
+              file_content.forEach((m) => {
+                if (m.id == action_element) m.word = e.target.value;
+              });
+            } else {
+              filter_words(e.target.value);
+            }
+          },
+          onblur: (e) => {
+            action = null;
+
+            e.target.value = "";
           },
           onkeydown: (e) => {
             if (e.keyCode === 13) {
@@ -359,10 +373,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 "li",
                 {
                   class: "item",
-                  "data-index": e.index,
+                  "data-index": e.id,
                   onfocus: () => {
                     helper.bottom_bar(
-                      "",
+                      "<img src='assets/images/pencil.svg'>",
                       "<img src='assets/images/save.svg'>",
                       "<img src='assets/images/delete.svg'>"
                     );
@@ -373,10 +387,26 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                     if (e.key === "SoftRight") {
                       //remove word
+                      let idToRemove =
+                        document.activeElement.getAttribute("data-index");
 
-                      let indexToRemove =
-                        document.activeElement.getAttribute("data-id");
-                      file_content.splice(indexToRemove, 1);
+                      filtered_content = filtered_content.filter(
+                        (item) => item.id !== Number(idToRemove)
+                      );
+                    }
+
+                    if (e.key === "SoftLeft") {
+                      action = "edit";
+                      action_element = Number(
+                        document.activeElement.getAttribute("data-index")
+                      );
+
+                      //edit word
+                      document.activeElement.getAttribute("data-index");
+                      document.getElementById("input-search").value =
+                        document.activeElement.textContent;
+
+                      document.getElementById("input-search").focus();
                     }
                   },
                 },
@@ -494,22 +524,20 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
 
       case "ArrowRight":
+        nav(+1);
+
         break;
 
       case "ArrowLeft":
+        nav(-1);
         break;
 
       case "ArrowUp":
         nav(-1);
-
         break;
 
       case "ArrowDown":
         nav(+1);
-        break;
-
-      case "5":
-        store_content();
         break;
     }
   }
