@@ -1,5 +1,5 @@
   {
-  "version": "0.0.4",
+  "version": "0.0.6",
   "version_name": "In the beginning was the Word",
   "name": "Parrot",
   "description": "With parrot you can expand and maintain the vocabulary of the predictive text",
@@ -7,7 +7,7 @@
   "type": "privileged",
   "fullscreen": "true",
   "priority": "high",
-  "userAgentInfo": "parrot / 0.4  written by strukturart@gmail.com",
+  "userAgentInfo": "parrot / 0.5  written by strukturart@gmail.com",
   "icons": {
     "56": "/assets/icons/icon-56-56.png",
     "112": "/assets/icons/icon-112-112.png"

@@ -227,7 +227,11 @@ document.addEventListener("DOMContentLoaded", function () {
           {
             id: "files-list",
             oncreate: () => {
-              helper.bottom_bar("", "", "<img src='assets/images/option.svg'>");
+              helper.bottom_bar(
+                "",
+                "<img src='assets/images/select.svg'>",
+                "<img src='assets/images/option.svg'>"
+              );
             },
           },
           [
@@ -321,7 +325,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
           },
           oninput: (e) => {
-            console.log(action);
             if (action == "edit") {
               file_content.forEach((m) => {
                 if (m.id == action_element) m.word = e.target.value;
@@ -343,7 +346,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (e.key === "SoftLeft") {
               //add word
               let valueToCheck = e.target.value;
-
+              if (valueToCheck == "") {
+                helper.side_toaster("input is empty", 4000);
+                return false;
+              }
               // Check if the value exists in the array of objects
               let valueExists = filtered_content.some(
                 (obj) => obj.word === valueToCheck
@@ -354,9 +360,16 @@ document.addEventListener("DOMContentLoaded", function () {
               } else {
                 file_content.push({
                   word: document.getElementById("input-search").value,
-                  id: file_content.lemgth,
+                  id: file_content.length,
                 });
-                filter_words(valueToCheck);
+                e.target.value = "";
+                filter_words("");
+                let index = file_content.length - 1;
+                setTimeout(() => {
+                  document
+                    .querySelector("[data-index='" + index + "']")
+                    .classList.add("shake");
+                }, 500);
               }
             }
           },

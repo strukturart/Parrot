@@ -320,8 +320,8 @@ div#intro img {
   display: block;
   width: 35%;
   position: absolute;
-  bottom: 20px;
-  left: 10px;
+  left: 30%;
+  top: 30%;
 }
 
 /*ADS*/
@@ -396,4 +396,26 @@ ul#words-list li {
   margin: 2px;
   border-radius: 10px;
   padding: 5px;
+}
+
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(2px);
+  }
+}
+
+.shake {
+  animation: shake 0.5s ease forwards;
 }
