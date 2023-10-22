@@ -1,12 +1,12 @@
 {
-  "name": "o.map",
-  "id": "o.map",
-  "description": "O.map, your ultimate navigation companion for KaiOS-powered devices. O.map is a lightweight and feature-rich map application designed specifically for KaiOS, enabling you to explore and navigate the world with ease. Whether you're a local resident, a tourist, or an adventurer, O.map is here to enhance your journey and keep you on the right track.",
+  "name": "parrot",
+  "id": "parrot",
+  "description": "With parrot you can expand and maintain the vocabulary of the predictive text",
 
   "lang": "en-US",
   "start_url": "/index.html",
       "priority": "high",
-        "userAgentInfo": "o.map written by strukturart@gmail.com",
+        "userAgentInfo": "parrot written by strukturart@gmail.com",
 
   "icons": [
     {
@@ -22,8 +22,8 @@
   ],
 
   "b2g_features": {
-    "version": "2.0.4",
-    "id": "o.map",
+    "version": "0.0.690",
+    "id": "parrot",
     "core": true,
     "categories": ["utilities"],
     "type": "privileged",
@@ -32,35 +32,22 @@
 
     "developer": {
       "name": "strukturart",
-      "url": "https://github.com/strukturart/o.map"
+      "url": "https://github.com/strukturart/parrot"
     },
     
-      "messages": [
-      { "serviceworker-notification": "index.html" },
-      "alarm",
-      "activity"
-    ],
+     
 
     "dependencies": {
       "ads-sdk": "1.5.8"
     },
 
-    "activities": {
-      "omap-oauth": {}
-    },
+   
 
-    "serviceworker": {
-      "script_url": "sw.js"
-    },
-
+   
     "permissions": {
       
-  "desktop-notification": {
-        "description": "Needed to fire system notifications"
-      },
-      "alarms": {
-        "description": "Required to schedule alarms"
-      },
+  
+     
       "mobiledata": {},
       "wifidata": {},
       "calllog": {},
@@ -68,15 +55,11 @@
         "description": "Read/Write from/to sd-card",
         "access": "readwrite"
       },
-      "video-capture": {
-        "description": "Reading Codes using the Camera"
-      },
+   
       "spatialnavigation-app-manage": {
         "navigator.spatialNavigationEnabled": false
-      },
-      "systemXHR": {
-        "description": "Required to load remote content"
       }
+    
     }
   }
 }

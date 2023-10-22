@@ -33,7 +33,6 @@ let set_tabindex = () => {
 };
 
 let store_content = () => {
-  // User clicked "OK" in the confirmation dialog
   var reversedString = filtered_content
     .map(function (item) {
       return item.word;
@@ -74,14 +73,19 @@ let load_file = function (filename) {
       // Split the string by "|"
       var splitArray = f.split("|");
 
-      // Create objects without including "|"
-      file_content = splitArray.map(function (item, index) {
-        // Remove leading and trailing whitespace from each item
-        item = item.trim();
+      // Create objects without including "|" and ignore if there's a whitespace after "|"
+      file_content = splitArray
+        .filter(function (item) {
+          // Remove leading and trailing whitespace from each item
+          item = item.trim();
 
-        // Create objects without including "|"
-        return { word: item, id: index };
-      });
+          // Include in the result only if the item is not an empty string
+          return item !== "";
+        })
+        .map(function (item, index) {
+          // Create objects without including "|"
+          return { word: item, id: index };
+        });
 
       // Assuming file_content is your array of objects
       file_content.sort(function (a, b) {
@@ -97,6 +101,8 @@ let load_file = function (filename) {
 
   request.onerror = function () {};
 };
+
+//NAVIGATION
 
 let nav = function (move) {
   set_tabindex();
@@ -139,7 +145,6 @@ try {
 
   cursor.onsuccess = function () {
     if (!this.result) {
-      console.log("finished");
       m.route.set("/start");
     }
     if (cursor.result.name !== null) {
@@ -167,20 +172,17 @@ if ("b2g" in navigator) {
     var sdcard = navigator.b2g.getDeviceStorage("sdcard");
     var iterable = sdcard.enumerate();
     var iterFiles = iterable.values();
+
     function next(_files) {
       _files
         .next()
         .then((file) => {
           if (!file.done) {
-            var file = cursor.result;
-            let n = file.name.split(".");
-            let file_type = n[n.length - 1];
-            let m = file.name.split("/");
-            let file_name = m[n.length];
+            let fileExtension = file.value.name.slice(-3); // Get the last three characters of the file name
 
-            let filetype = "dic";
-            if (file_type == filetype) {
-              files.push({ path: file.name, name: file_name });
+            if (fileExtension == "dic") {
+              files.push({ path: file.value.name, name: file.value.name });
+              m.route.set("/start");
             }
 
             next(_files);
@@ -190,9 +192,10 @@ if ("b2g" in navigator) {
           next(_files);
         });
     }
+
     next(iterFiles);
   } catch (e) {
-    console.log(e);
+    alert(e);
   }
 }
 
@@ -209,7 +212,6 @@ document.addEventListener("DOMContentLoaded", function () {
           "div",
           {
             id: "intro",
-            oninit: () => {},
             oncreate: () => {
               startup
                 ? (t = 5000)
@@ -305,9 +307,6 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   var list = {
-    oninit: function () {
-      // Execute load_file and wait for it to complete before proceeding
-    },
     view: function () {
       return m("div", [
         m("input", {
@@ -325,6 +324,15 @@ document.addEventListener("DOMContentLoaded", function () {
             );
           },
           oninput: (e) => {
+            if (e.target.value != "") {
+              helper.bottom_bar("<img src='assets/images/add.svg'>", "", "");
+            } else {
+              helper.bottom_bar(
+                "<img src='assets/images/add.svg'>",
+                "<img src='assets/images/save.svg'>",
+                ""
+              );
+            }
             if (action == "edit") {
               file_content.forEach((m) => {
                 if (m.id == action_element) m.word = e.target.value;
@@ -339,11 +347,20 @@ document.addEventListener("DOMContentLoaded", function () {
             e.target.value = "";
           },
           onkeydown: (e) => {
-            if (e.keyCode === 13) {
+            if (e.keyCode === 13 && e.target.value == "") {
               store_content();
             }
 
             if (e.key === "SoftLeft") {
+              const regex = /^[^\d\s]+.*[A-Za-zÀ-ÖØ-öø-ÿ]+.*$/;
+
+              if (regex.test(e.target.value)) {
+                console.log("Input is valid.");
+              } else {
+                helper.side_toaster("input is not valid", 4000);
+                return false;
+              }
+
               //add word
               let valueToCheck = e.target.value;
               if (valueToCheck == "") {
@@ -369,6 +386,11 @@ document.addEventListener("DOMContentLoaded", function () {
                   document
                     .querySelector("[data-index='" + index + "']")
                     .classList.add("shake");
+                  helper.bottom_bar(
+                    "<img src='assets/images/add.svg'>",
+                    "<img src='assets/images/save.svg'>",
+                    ""
+                  );
                 }, 500);
               }
             }
