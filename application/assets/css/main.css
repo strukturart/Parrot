@@ -398,7 +398,29 @@ ul#words-list li {
   padding: 5px;
 }
 
+ul#words-list {
+  padding-bottom: 50px;
+}
+
 @keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes delete {
   0% {
     transform: translateX(0);
   }
@@ -418,4 +440,8 @@ ul#words-list li {
 
 .shake {
   animation: shake 0.5s ease forwards;
+}
+
+.delete {
+  animation: delete 0.5s ease forwards;
 }
