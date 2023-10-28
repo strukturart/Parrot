@@ -102,6 +102,30 @@ let load_file = function (filename) {
   request.onerror = function () {};
 };
 
+const get_contact = (callback) => {
+  if (typeof navigator.mozApps !== "undefined") {
+    var activity = new MozActivity({
+      name: "pick",
+      data: {
+        type: ["webcontacts/contact"],
+      },
+    });
+
+    activity.onsuccess = function () {
+      var contact = this.result;
+      if (contact && contact.contact) {
+        var contactName = contact.contact.name[0];
+        console.log("Contact Name: " + contactName);
+        callback(contactName); // Pass the contactName to the callback
+      }
+    };
+
+    activity.onerror = function () {
+      console.error("Error opening contact picker: " + this.error.name);
+    };
+  }
+};
+
 //NAVIGATION
 
 let nav = function (move) {
@@ -178,7 +202,7 @@ if ("b2g" in navigator) {
         .next()
         .then((file) => {
           if (!file.done) {
-            let fileExtension = file.value.name.slice(-3); // Get the last three characters of the file name
+            let fileExtension = file.value.name.slice(-3);
 
             if (fileExtension == "dic") {
               files.push({ path: file.value.name, name: file.value.name });
@@ -320,7 +344,7 @@ document.addEventListener("DOMContentLoaded", function () {
             helper.bottom_bar(
               "<img src='assets/images/add.svg'>",
               "<img src='assets/images/save.svg'>",
-              ""
+              "<img src='assets/images/person.svg'>"
             );
           },
           oninput: (e) => {
@@ -330,7 +354,7 @@ document.addEventListener("DOMContentLoaded", function () {
               helper.bottom_bar(
                 "<img src='assets/images/add.svg'>",
                 "<img src='assets/images/save.svg'>",
-                ""
+                "<img src='assets/images/person.svg'>"
               );
             }
             if (action == "edit") {
@@ -352,7 +376,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (e.key === "SoftLeft") {
-              const regex = /^[^\d\s]+.*[A-Za-zÀ-ÖØ-öø-ÿ]+.*$/;
+              const regex = /^[^\d\s]+[A-Za-zÀ-ÖØ-öø-ÿ]+$/;
 
               if (regex.test(e.target.value)) {
                 console.log("Input is valid.");
@@ -382,15 +406,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 e.target.value = "";
                 filter_words("");
                 let index = file_content.length - 1;
+
                 setTimeout(() => {
                   document
                     .querySelector("[data-index='" + index + "']")
                     .classList.add("shake");
+
                   helper.bottom_bar(
                     "<img src='assets/images/add.svg'>",
                     "<img src='assets/images/save.svg'>",
-                    ""
+                    "<img src='assets/images/person.svg'>"
                   );
+                  //focus added element
+                  document.getElementById("input-search").blur();
+                  let ite = document.querySelectorAll(".item");
+                  nav(index);
+                  ite[index + 1].focus();
                 }, 500);
               }
             }
@@ -492,18 +523,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function longpress_action(param) {
     switch (param.key) {
-      case "*":
-        break;
-      case "0":
-        if (status.windowOpen == "map") {
-          return false;
-        }
-        break;
-
       case "Backspace":
         break;
 
-      case "6":
+      case "SoftRight":
         break;
 
       case "1":
@@ -551,6 +574,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
       case "SoftRight":
       case "Alt":
+        if (m.route.get().includes("/list_words")) {
+          get_contact(function (contactName) {
+            document.querySelector("#input-search").value = contactName;
+          });
+        }
         break;
 
       case "Enter":
